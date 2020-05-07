@@ -4,5 +4,5 @@
 - Bigquery:SQL_reference_bigquery.md
 - PostgreSQL:SQL_reference_postgre.md
 
-<br>
-使用データ:[Kaggle recruit restaurant visitor forecasting](https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data)
+使用データ:<br>
+[Kaggle recruit restaurant visitor forecasting](https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data)
