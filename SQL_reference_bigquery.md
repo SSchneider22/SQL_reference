@@ -933,20 +933,35 @@ ON
 
 ### EXISTS句
 #### 説明
+2つの同じキー項目を持つテーブルにおいて、片方のテーブルでの結果をサブクエリとしてフィルタに用いて、もう片方のテーブルから結果を得るときに使用する。<br>
+(EXISTS句はフィルタとして使う場合が多いため、WHERE句やHAVING句の中で書くことが多いため、こういった説明にしている。逆にこれ以外の用途がパッと浮かびません…)
 
 #### 例
-1. aaaa
+1. air_visit_dataのair_store_id別のvisitorsの合計値が2000以上であるair_store_idについて、air_reserveのair_store_id別のreserve_visitorsの合計値を出力する
 ```
-
-```
-
-### ALL句
-#### 説明
-
-#### 例
-1. aaaa
-```
-
+SELECT
+  A.air_store_id,
+  SUM(A.reserve_visitors) AS sum_reserve_visitors
+FROM
+  `kaggle_recruit_data.air_reserve` A
+WHERE
+  A.visit_datetime BETWEEN "2017-01-01" AND "2017-12-31"
+  AND EXISTS (
+    SELECT
+      B.air_store_id
+      ,SUM(B.visitors)
+    FROM
+      `kaggle_recruit_data.air_visit_data` B
+    WHERE
+      B.visit_date BETWEEN "2017-01-01" AND "2017-12-31"
+    GROUP BY
+      B.air_store_id
+    HAVING
+      A.air_store_id = B.air_store_id
+      AND SUM(B.visitors) >= 2000
+  )
+GROUP BY
+  A.air_store_id
 ```
 
 
