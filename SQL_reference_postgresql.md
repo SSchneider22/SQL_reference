@@ -10,19 +10,26 @@
 <br>
 「サンプルクエリを自分で変更して実行して、どう挙動が変わるか」をひたすら繰り返すのが、筆者は一番身につくのが速いと感じていますので、とにかくやってみることをオススメします。
 
-### 使用データ：
+## サンプルクエリ実行環境＆データ
+### 環境
+私はWSL2上のUbuntuにDockerを用いてPostgreSQLの環境を構築しています。<br>
+「psqlが実行できるCLI環境」があれば、なんでも良いはずです。
+- OS:WSL2 Ubuntu 18.04 LTS
+- psql (PostgreSQL): 10.12 (Ubuntu 10.12-0ubuntu0.18.04.1)
+
+私がWSL2~PostgreSQL環境構築の際に参考にしたサイト：<br>
+https://necojackarc.hatenablog.com/entry/2019/10/09/080908
+
+### 使用データ
 Kaggleのデータを使用しています。<br>
 https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 
-### サンプルSQL実行環境
-**「Bigqueryの標準SQL」**  を使用。<br>
- (KaggleからダウンロードしたCSVをアップロード。型はすべて自動割り当てを使用。) <br>
-クレジットカードなど登録せずに無料で使用できるsandbox環境でも可能。（筆者はsandbox環境を使用。）<br>
-https://cloud.google.com/bigquery/docs/sandbox?hl=ja
-
-以下、私のサンプルクエリ実行時のデータセット等の情報を記します。
-- データセット名：kaggle_recruit_data
+### スキーマ・テーブル
+- スキーマ名：kaggle_recruit_data
 - 各テーブル名：元のCSVの名称をそのまま使用
+
+実際にPostgreSQL上にこのサンプルと同じスキーマとテーブルを構築する方は、本ページ末尾に「参考：スキーマ・テーブル構築手順」という見出しで記載していますので、こちらをご参照ください。
+
 
 ## SQLの種類
 大きく以下の3種類に分けられる。
@@ -44,8 +51,8 @@ https://cloud.google.com/bigquery/docs/sandbox?hl=ja
 筆者が学習ベースにしているBigqueryではトランザクション処理をサポートしていないため、本ページでは扱う予定なし。
 （Bigqueryは分析用途に特化しており、決済などのトランザクション処理が不可）
 
-
-## 文 statement
+<br>
+ここで、「文 statement」について簡単に説明する。<br>
 1つの実行単位となる。 使用するDB製品によっては、末尾に「;」が必須。
 
 
@@ -1011,3 +1018,133 @@ https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax?hl=ja
 ## DDL(Data Definition Language)
 Bigqueryにおける公式ドキュメントは下記URLを参照。
 https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language?hl=ja
+
+
+
+
+### 参考：スキーマ・テーブル構築手順
+
+#### 使用データと置き場
+Kaggleのデータを使用しています。<br>
+https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
+
+<br>
+このデータを、Ubuntu上において、以下のディレクトリ上に全てのCSVを置いています。（全てのCSVファイルの文字コードを、UTF-8に変換しておくこと。）<br>
+私はDockerでPostgreSQLを入れているため、COPYコマンドではなく、\copyコマンドを使っています。
+```
+/home/[ユーザー名]/practice/postgresql/data
+```
+
+#### 手順
+1. psqlを起動。
+```
+psql
+```
+
+2. スキーマ「kaggle_recruit_data」を作る
+```
+CREATE SCHEMA kaggle_recruit_data;
+```
+
+3. テーブル「air_reserve」を作成
+```
+CREATE TABLE kaggle_recruit_data.air_reserve(
+  "air_store_id" VARCHAR
+  , "visit_datetime" TIMESTAMP
+  , "reserve_datetime" TIMESTAMP
+  , "reserve_visitors" INT
+);
+```
+
+4. テーブル「air_reserve」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.air_reserve FROM '/home/[ユーザー名]/practice/postgresql/data/air_reserve.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+5. テーブル「air_store_info」を作成
+```
+CREATE TABLE kaggle_recruit_data.air_store_info(
+  "air_store_id" VARCHAR
+  , "air_genre_name" VARCHAR
+  , "air_area_name" VARCHAR
+  , "latitude" FLOAT
+  , "longitude" FLOAT
+);
+```
+
+6. テーブル「air_store_info」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.air_store_info FROM '/home/[ユーザー名]/practice/postgresql/data/air_store_info.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+7. テーブル「air_visit_data」を作成
+```
+CREATE TABLE kaggle_recruit_data.air_visit_data(
+  "air_store_id" VARCHAR
+  , "visit_date" DATE
+  , "visitors" INT
+);
+```
+
+8. テーブル「air_visit_data」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.air_visit_data FROM '/home/[ユーザー名]/practice/postgresql/data/air_visit_data.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+9. テーブル「date_info」を作成
+```
+CREATE TABLE kaggle_recruit_data.date_info(
+  "calendar_date" DATE
+  , "day_of_week" VARCHAR
+  , "holiday_flg" INT
+);
+```
+
+10.  テーブル「date_info」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.date_info FROM '/home/[ユーザー名]/practice/postgresql/data/date_info.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+11. テーブル「hpg_reserve」を作成
+```
+CREATE TABLE kaggle_recruit_data.hpg_reserve(
+  "hpg_store_id" VARCHAR
+  , "visit_datetime" TIMESTAMP
+  , "reserve_datetime" TIMESTAMP
+  , "reserve_visitors" INT
+);
+```
+
+12. テーブル「hpg_reserve」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.hpg_reserve FROM '/home/[ユーザー名]/practice/postgresql/data/hpg_reserve.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+13. テーブル「hpg_store_info」を作成
+```
+CREATE TABLE kaggle_recruit_data.hpg_store_info(
+  "hpg_store_id" VARCHAR
+  , "hpg_genre_name" VARCHAR
+  , "hpg_area_name" VARCHAR
+  , "latitude" FLOAT
+  , "longitude" FLOAT
+);
+```
+
+14. テーブル「hpg_store_info」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.hpg_store_info FROM '/home/[ユーザー名]/practice/postgresql/data/hpg_store_info.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+15. テーブル「store_id_relation」を作成
+```
+CREATE TABLE kaggle_recruit_data.store_id_relation(
+  "air_store_id" VARCHAR
+  , "hpg_store_id" VARCHAR
+);
+```
+
+16. テーブル「store_id_relation」に、CSVの内容をコピーする
+```
+\copy kaggle_recruit_data.store_id_relation FROM '/home/[ユーザー名]/practice/postgresql/data/store_id_relation.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
