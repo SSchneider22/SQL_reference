@@ -20,6 +20,7 @@
 私がWSL2~PostgreSQL環境構築の際に参考にしたサイト：<br>
 https://necojackarc.hatenablog.com/entry/2019/10/09/080908
 
+
 ### 使用データ
 Kaggleのデータを使用しています。<br>
 https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
@@ -29,6 +30,11 @@ https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 - 各テーブル名：元のCSVの名称をそのまま使用
 
 実際にPostgreSQL上にこのサンプルと同じスキーマとテーブルを構築する方は、本ページ末尾に「参考：スキーマ・テーブル構築手順」という見出しで記載していますので、こちらをご参照ください。
+
+### メタコマンド
+PostgreSQLをCLIから操作する際は、メタ文字でのコマンドも覚えておいたほうが良いです。例えば、クエリの出力結果が多すぎて止めたい場合は、「\q」または「Shift + q」で止めることが出来ます。詳しくは以下のURLなどを参照。<br>
+https://www.dbonline.jp/postgresql/connect/index5.html
+
 
 
 ## SQLの種類
@@ -53,7 +59,7 @@ https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 
 <br>
 ここで、「文 statement」について簡単に説明する。<br>
-1つの実行単位となる。 使用するDB製品によっては、末尾に「;」が必須。
+1つの実行単位となる。 CLIから実行する際は、末尾に「;」が必要となることが多い印象。<br>
 
 
 ## 主要な句 clause
@@ -72,7 +78,7 @@ https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ```
 
 2. 指定したテーブルから、指定した列を取得
@@ -81,7 +87,7 @@ SELECT
   reserve_visitors,
   visit_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ```
 
 3. 指定したテーブルから、指定した列を取得。ただし、レコードに重複がある場合は削除
@@ -89,7 +95,7 @@ FROM
 SELECT DISTINCT
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ```
 
 4. 指定した列の名称を変更した上で取得
@@ -97,7 +103,7 @@ FROM
 SELECT DISTINCT
   reserve_visitors AS vistor
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ```
 
 ### SQLで使用できる比較演算子(=,<,>など)
@@ -131,9 +137,9 @@ SELECT
   air_store_id,
   visit_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
-  visit_datetime < '2017-01-01'
+  visit_datetime < '2017-01-01';
 ```
 
 2. 2017年1月1日～12月31日のデータを取得したいとき。
@@ -143,9 +149,9 @@ SELECT
   air_store_id,
   visit_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
-  visit_datetime BETWEEN '2017-01-01' AND '2017-12-31'
+  visit_datetime BETWEEN '2017-01-01' AND '2017-12-31';
 ```
 
 3. reserve_visitorsが2,4,9のデータのみ取得したいとき
@@ -156,9 +162,9 @@ SELECT
   visit_datetime,
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
-  reserve_visitors IN (2, 4, 9)
+  reserve_visitors IN (2, 4, 9);
 ```
 
 4. reserve_visitorsが2,4,9「以外」かつ2017年1月1日～12月31日のデータのみ取得したいとき
@@ -169,13 +175,13 @@ SELECT
   visit_datetime,
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
   reserve_visitors NOT IN (2, 4, 9)
-  AND (visit_datetime BETWEEN '2017-01-01' AND '2017-12-31')
+  AND (visit_datetime BETWEEN '2017-01-01' AND '2017-12-31');
 ```
 
-5. NULL値を持つデータを取得したいとき
+5. NULL値を持つデータを取得したいとき。（NULLのデータがないため、出力は0件です）
 
 ```
 SELECT
@@ -183,9 +189,9 @@ SELECT
   visit_datetime,
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
-  reserve_visitors IS NULL
+  reserve_visitors IS NULL;
 ```
 
 6. NULL値でないデータを取得したいとき
@@ -196,9 +202,9 @@ SELECT
   visit_datetime,
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
-  reserve_visitors IS NOT NULL
+  reserve_visitors IS NOT NULL;
 ```
 
 7. ワイルドカードを用いて、前半部分一致で検索したいとき<br>
@@ -210,9 +216,9 @@ SELECT
   air_genre_name,
   air_area_name
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
-  air_area_name LIKE 'Tōkyō-to%'
+  air_area_name LIKE 'Tōkyō-to%';
 /* LIKEは、「_」で何かしらの1文字が入る、という検索も可能*/
 ```
 
@@ -225,9 +231,9 @@ WHERE
 SELECT DISTINCT
   reserve_visitors AS vistor
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ORDER BY
-  reserve_visitors ASC
+  reserve_visitors ASC;
 ```
 
 2. レコードを降順に並び替えて表示（並び替えキーは単一列）
@@ -235,9 +241,9 @@ ORDER BY
 SELECT DISTINCT
   reserve_visitors AS vistor
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ORDER BY
-  reserve_visitors DESC
+  reserve_visitors DESC;
 ```
 
 3. レコードをreserve_visitorsは昇順、visit_datetimeは降順に並び替えて表示
@@ -246,9 +252,9 @@ SELECT
   reserve_visitors,
   visit_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 ORDER BY
-  reserve_visitors ASC, visit_datetime DESC
+  reserve_visitors ASC, visit_datetime DESC;
 ```
 
 
@@ -277,11 +283,11 @@ SELECT
   S.air_genre_name,
   S.air_area_name
 FROM
-  `kaggle_recruit_data.air_reserve` R
+  kaggle_recruit_data.air_reserve R
 LEFT OUTER JOIN
-  `kaggle_recruit_data.air_store_info` S
+  kaggle_recruit_data.air_store_info S
 ON
-  R.air_store_id = S.air_store_id
+  R.air_store_id = S.air_store_id;
 ```
 
 
@@ -304,7 +310,7 @@ GROUP BYで集計した結果に対して、WHERE句のような絞り込みを�
 SELECT
   COUNT(*) AS record_count
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
 2. air_store_id別に、reserve_visitorsの合計を出力
@@ -313,9 +319,9 @@ SELECT
   air_store_id,
   SUM(reserve_visitors) AS sum_reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 GROUP BY
-  air_store_id
+  air_store_id;
 ```
 
 3. air_store_id別の、reserve_visitorsの合計値が100以上のデータを出力
@@ -324,11 +330,11 @@ SELECT
   air_store_id,
   SUM(reserve_visitors) AS sum_reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 GROUP BY
   air_store_id
 HAVING
-  sum_reserve_visitors >= 100
+  SUM(reserve_visitors) >= 100;
 ```
 
 ## 式 experssion
@@ -341,21 +347,39 @@ HAVING
 #### 例
 1. reserve_datetimeとvisit_datetimeの日付の差が1日以上、<br>
    つまり前日までに予約がされているならばTRUE、<br>
-   そうでないならばFALSEを出力
+   そうでないならばFALSEを「reserved_by_previousday」として出力
 ```
 SELECT
   hpg_store_id,
   visit_datetime,
   reserve_datetime,
   reserve_visitors,
-  CASE WHEN TIMESTAMP_DIFF(visit_datetime, reserve_datetime, DAY) > 0 THEN TRUE
+  CASE WHEN (CAST(visit_datetime AS DATE) - CAST(reserve_datetime AS DATE)) > 0 THEN TRUE
     ELSE FALSE
-    END AS `RESERVED_BY_PREVIOUSDAY`
+    END AS reserved_by_previousday
 FROM
-  `kaggle_recruit_data.hpg_reserve`
+  kaggle_recruit_data.hpg_reserve;
 ```
 
-
+2. reserve_datetimeとvisit_datetimeの日付の差が1日以上、<br>
+   つまり前日までに予約がされているならばTRUE、<br>
+   そうでないならばFALSEを「reserved_by_previousday」として出力。この上で、TRUEのデータのみに絞り込む
+```
+SELECT
+  hpg_store_id,
+  visit_datetime,
+  reserve_datetime,
+  reserve_visitors,
+  CASE WHEN (CAST(visit_datetime AS DATE) - CAST(reserve_datetime AS DATE)) > 0 THEN TRUE
+    ELSE FALSE
+    END AS reserved_by_previousday
+FROM
+  kaggle_recruit_data.hpg_reserve
+WHERE
+  CASE WHEN (CAST(visit_datetime AS DATE) - CAST(reserve_datetime AS DATE)) > 0 THEN TRUE
+    ELSE FALSE
+    END = TRUE;
+```
 
 ## 文字列関数
 
@@ -370,7 +394,7 @@ SELECT
   hpg_genre_name,
   LENGTH(hpg_genre_name) AS charcount_genre_name
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
 ### TRIM関数
@@ -386,7 +410,7 @@ SELECT
   hpg_genre_name,
   TRIM(hpg_genre_name, ' style') AS trim_genre_name
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
 ### REPLACE関数
@@ -400,7 +424,7 @@ SELECT
   hpg_genre_name,
   REPLACE(hpg_genre_name, 'style', 'restaurant') AS trim_genre_name
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
 ### SUBSTR関数
@@ -417,7 +441,7 @@ SELECT
   hpg_genre_name,
   SUBSTR(hpg_store_id, 1,3) AS trim_genre_name
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
 ### CONCAT関数・||演算子
@@ -431,7 +455,7 @@ SELECT
   air_store_id,
   air_genre_name,
   CONCAT(air_store_id,'_',air_genre_name)
-FROM `kaggle_recruit_data.air_store_info`
+FROM kaggle_recruit_data.air_store_info;
 ```
 2. air_store_idとair_genre_nameを、「_」を間に挟んで連結する。||演算子を使用したとき。
 ```
@@ -439,13 +463,13 @@ SELECT
   air_store_id,
   air_genre_name,
   air_store_id || '_' || air_genre_name
-FROM `kaggle_recruit_data.air_store_info`
+FROM kaggle_recruit_data.air_store_info;
 ```
 
 
 ## 数学関数
 公式ドキュメントは以下<br>
-https://cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions?hl=ja#sign
+https://www.postgresql.jp/document/10/html/functions-math.html
 
 ### 基本的な数学関数
 少し説明がわかりづらいROUNDとTRUNC以外は、以下の表にまとめる。
@@ -456,59 +480,71 @@ https://cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_funct
 |引き算|-|(数値型)-(数値型)|
 |掛け算|* |(数値型)*(数値型)|
 |割り算|/|(数値型)/(数値型)|
-|余剰の計算|MOD()|MOD(X,Y) --> XをYで割った余りを返す|
+|余剰の計算|%|(数値型)%(数値型)|
 |絶対値|ABS()|ABS(X) --> Xの絶対値を返す|
 |三角関数|SIN(),COS(),TAN()|SIN(X) --> Xのサインを返す(-1~1)|
 |指数関数|EXP()|EXP(X) --> eのX乗を返す|
 |自然対数|LN()|LN(X) --> Xの自然対数（eを底とする対数）を返す|
-|常用対数|LOG10()|LOG10(X) --> 10を底とする対数を返す|
-|べき乗|POW(),POWER()|POW(X,Y) --> XをY乗した値を返す|
+|常用対数|LOG()|LOG(X) --> 10を底とする対数を返す。引数追加で底の変更も可能|
+|べき乗|POWER()|POWER(X,Y) --> XをY乗した値を返す|
 |平方根|SQRT()|SQRT(X) --> Xの平方根を返す|
 |符号の出力(-1,0,+1を出力)|SIGN()|SIGN(X) --> Xの符号を返す|
 
 ### ROUND関数
 #### 説明
-指定した列のデータに対して、指定桁で四捨五入する関数
+指定した列のデータに対して、四捨五入(DOUBLE PRECISION型の場合は五捨五超入)する関数。
+このややこしい事象については、以下を参考にした。<br>
+https://qiita.com/fujii_masao/items/c79575fb57827f658063
+
+<br>
+また、サンプルクエリの中で「::NUMERIC」のような記述をしているが、
+これは通常CAST関数などを用いる型変換の、簡易記述ver。
+
 #### 例
 1. latitudeを、少数第一位で四捨五入
 ```
 SELECT
   latitude,
-  ROUND(latitude, 0) AS ROUND_latitude
+  ROUND(latitude::NUMERIC) AS round_numeric_latitude
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
-### TRUNC関数
-#### 説明
-指定した列のデータに対して、指定桁で切り捨てる関数
-#### 例
-1. latitudeを、少数第一位で切り捨て
+2. latitudeを、少数第一位で五捨五超入
 ```
 SELECT
   latitude,
-  TRUNC(latitude, 0) AS ROUND_latitude
+  ROUND(latitude::DOUBLE PRECISION) AS round_double_latitude
 FROM
-  `kaggle_recruit_data.hpg_store_info`
+  kaggle_recruit_data.hpg_store_info;
 ```
 
 
+### TRUNC関数
+#### 説明
+指定した列のデータに対して、指定桁未満で切り捨てる関数。NUMERIC型に対して使用可能。
+DOUBLE PRECISION型だとpostgreSQLのVer8.X以上ではエラーになる模様。
+#### 例
+1. latitudeを、少数第2位以上を残して、切り捨て
+```
+SELECT
+  latitude,
+  TRUNC(latitude::NUMERIC, 2) AS round_latitude
+FROM
+  kaggle_recruit_data.hpg_store_info;
+```
 
-## 日付・時間(DATE/TIME/DATETIME/TIMESTAMP)関数
 
-### 日時に関する4つの型
-日時に関しては、Bigqueryでは4つの型がある。(他のDB製品ではYEARなどもあるらしい)<br>
+## 日付・時間(DATE/TIME/TIMESTAMP)関数＆演算
+
+### 日時に関する3つの型
+日時に関しては、以下3つが主な型。<br>
 TIMESTAMP型の末尾の「+00」は、UTCを軸にどれだけ時差があるかを示している<br>
 |型名|サンプル|
 |-|-|
 |DATE|2016-12-25|
 |TIME|05:30:00|
-|DATETIME|2016-12-25 05:30:00|
 |TIMESTAMP|2016-12-25 05:30:00+00|
-<br>
-DATETIME型とTIMESTAMP型、どちらを使うかだが、MySQLでのTIMESTAMP型は2038年問題があるため、
-筆者個人の意見としては、特別な事情がない限り「DATETIME型を使うべき」と考えます。
-
 
 ### 日時関数を使用する際の”part”について
 日時関数では、年・月・日・時・分など、どの部分(part)を使うのか指定する場合がある<br>
@@ -517,56 +553,53 @@ DATETIME型とTIMESTAMP型、どちらを使うかだが、MySQLでのTIMESTAMP�
 |part|内容|
 |-|-|
 |YEAR|年|
-|QUARTER|3か月ごとのクォーター 1~4 (1月が開始月)|
 |MONTH|月|
-|WEEK|週番号0~53 (日曜日が開始日)|
-|WEEK(MONDAY)|週番号0~53 (月曜日が開始日、曜日は変更可能)|
-|DAYOFYEAR|該当年の365or366日の内の何日目 (1月1日が開始日)|
+|WEEK|週番号0~53 (月曜日が開始日)|
 |DAY|日|
 |HOUR|時|
 |MINUTE|分|
 |SECOND|秒|
 
 ### 参考URL
-日時関数関係は公式ドキュメントを見ると、より詳細なオプションが記載されている
-https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions?hl=ja
-https://cloud.google.com/bigquery/docs/reference/standard-sql/time_functions?hl=ja
-https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions?hl=ja
-https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions?hl=ja
+日時関数関係は公式ドキュメントを見ると、より詳細なオプションが記載されている<br>
+https://www.postgresql.jp/document/10/html/datatype-datetime.html
 
-### CURRENT_(DATE/TIME/DATETIME/TIMESTAMP)関数
+### CURRENT_(DATE/TIME/TIMESTAMP)関数
 #### 説明
 現在の日時をTIMESTAMP型で取得する関数
 同様の関数として、CURRENT_DATE、CURRENT_TIME、CURRENT_DATETIMEなどがある
 #### 例
+1. 今日の日付をTIMESTAMP型で取得
 ```
 SELECT
-  CURRENT_TIMESTAMP()
+  CURRENT_TIMESTAMP;
 ```
 
 ### EXTRACT関数
 #### 説明
-日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)から、part部に指定した内容を取得する関数
+日時データ(DATE型,TIME型,TIMESTAMP型)から、part部に指定した内容を取得する関数
 #### 例
-1. DATE型のデータからから「日(DAY)」を取得
+1. DATE型のデータから「日(DAY)」を取得
 ```
-SELECT EXTRACT(DAY FROM  DATE('2018-07-15')) /*15*/
+SELECT EXTRACT('DAY' FROM  DATE('2018-07-15'));
 ```
+
 2. TIMESTAMP型であるvisit_datetimeから、「時(HOUR)」を取得
 ```
 SELECT
   air_store_id,
   visit_datetime,
-  EXTRACT(HOUR FROM visit_datetime) AS hour_of_visit_datetime
+  EXTRACT('HOUR' FROM visit_datetime) AS hour_of_visit_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-### (DATE/TIME/DATETIME/TIMESTAMP)_DIFF関数
+### (DATE/TIME/TIMESTAMP)型同士の差
 #### 説明
-2つの同じ型の日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)を与えることで、それらの差分値を取得する関数<br>
-使用するDBによって、表記と使い方が異なるため要確認。<br>
-以下は、「DATE_DIFF」の例
+PostgreSQLで、2つの同じ型の日時データ(DATE型,TIME型,TIMESTAMP型)の差を得るには、
+引き算を用いるしかない。<br>
+使用するDBによっては、差分を求める関数がある場合もある。要確認。<br>
+以下、他製品での日時データの差分確認方法の参考
 - DATE_DIFF：Bigquery,
 - DATEDIFF：MySQL,SQL Server,Redshift
 - 同じ日時型同士の引き算：PostgreSQL,Oracle
@@ -577,24 +610,24 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  TIMESTAMP_DIFF(visit_datetime, reserve_datetime, DAY) AS day_diff
+  CAST(visit_datetime AS DATE) - CAST(reserve_datetime AS DATE) AS day_diff
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
-2. DATE型のvisit_dateと、CURRENT_DATE()で今日の日付をDATE型で取得したときの、月差(MONTH)を取得
+2. DATE型のvisit_dateと、CURRENT_DATE()で今日の日付をDATE型で取得したときの、月差(MONTH)を取得。（満〇か月、で計算している）
 ```
 SELECT
   air_store_id,
   visit_date,
-  DATE_DIFF(visit_date, CURRENT_DATE(), MONTH) AS month_diff
+  EXTRACT(YEAR FROM AGE(CURRENT_DATE ,visit_date))*12 + EXTRACT(MONTH FROM AGE(CURRENT_DATE ,visit_date)) AS month_diff
 FROM
-  `kaggle_recruit_data.air_visit_data`
+  kaggle_recruit_data.air_visit_data;
 ```
 
-### (DATE/TIME/DATETIME/TIMESTAMP)_ADD関数
+### (DATE/TIME/TIMESTAMP)_型に対する加算・減算
 #### 説明
-日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)に対して、指定した数値を加算した日時を取得する関数。<br>
-使用するDBによって、表記と使い方が異なるため要確認。<br>
+日時データ(DATE型,TIME型,TIMESTAMP型)に対して、指定した数値を加算・減算した日時を取得するためには、関数が用意されていないためそれぞれ演算処理を記述する。<br>
+使用するDBによっては、関数が用意されているため要確認。<br>
 以下は、「DATE_ADD」の例
 - DATE_ADD：Bigquery,MySQL
 - DATEADD：SQL Server,Redshift
@@ -606,45 +639,36 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  TIMESTAMP_ADD(reserve_datetime, INTERVAL 1 DAY) AS reserve_datetime_add1day
+  reserve_datetime + ('1 DAYS') AS reserve_datetime_add1day
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-2. TIMESTAMP型のreserve_datetimeに、1か月加算した値を出力(TIMESTAMP型はpart:MONTHに対応していないため、DATE()でDATE型へ変換が必要)
+2. TIMESTAMP型のreserve_datetimeに、1か月加算した値を出力
 ```
 SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  DATE_ADD(DATE(reserve_datetime), INTERVAL 1 MONTH) AS reserve_datetime_add1month
+  reserve_datetime + ('1 MONTHS') AS reserve_datetime_add1month
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-### (DATE/TIME/DATETIME/TIMESTAMP)_SUB関数
-#### 説明
-日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)に対して、指定した数値を減算した日時を取得する関数。<br>
-使用するDBによって、表記と使い方が異なるため要確認。<br>
-以下は、「DATE_SUB」の例
-- DATE_SUB：Bigquery,MySQL
-- DATESUB関数無し、DATEADDのINTERVALを負にして対応：SQL Server,Redshift
-- DATESUB関数無し、個別に演算作る必要あり：PostgreSQL,Oracle
-#### 例
-1. TIMESTAMP型のreserve_datetimeに、1週間減算した値を出力(TIMESTAMP型はpart:WEEKに対応していないため、DATE()でDATE型へ変換が必要)
+3. TIMESTAMP型のreserve_datetimeに、1週間減算した値を出力
 ```
 SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  DATE_SUB(DATE(reserve_datetime), INTERVAL 1 WEEK) AS reserve_datetime_sub1week
+  reserve_datetime + ('-1 WEEKS') AS reserve_datetime_sub1week
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-### (DATE/TIME/DATETIME/TIMESTAMP)_TRUNC関数
+### (DATE/TIME/TIMESTAMP)_TRUNC関数
 #### 説明
-日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)に対して、型は変換せずに、指定したpartの粒度の中で最も小さい値に変換する関数。<br>
+日時データ(DATE型,TIME型,TIMESTAMP型)に対して、型は変換せずに、指定したpartの粒度の中で最も小さい値に変換する関数。<br>
 月初、月末の日付を取得する時に便利。<br>
 使用するDBによって、表記と使い方が異なるため要確認。<br>
 以下は、「DATE_TRUNC」の例
@@ -659,48 +683,38 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  DATE_TRUNC(DATE(reserve_datetime), MONTH) AS firstday_reserve_datetime_month
+  DATE_TRUNC('MONTH', DATE(reserve_datetime)) AS firstday_reserve_datetime_month
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-2. reserve_date_timeをその日付が該当する週の中での1日目(デフォルトである日曜日)に変換する。
-   (例：2016-10-14 --> 2016-10-09)
+2. reserve_date_timeをその日付が該当する週の中での1日目(月曜日)に変換する。
+   (例：2016-01-01 --> 2015-12-28)
 ```
 SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  DATE_TRUNC(DATE(reserve_datetime), WEEK) AS firstday_reserve_datetime_week
+  DATE_TRUNC('WEEK', DATE(reserve_datetime)) AS firstday_reserve_datetime_week
 FROM
-  `kaggle_recruit_data.air_reserve`
-```
-
-3. reserve_date_timeをその日付が該当する週の中での1日目(月曜日に変更)に変換する。
-   (例：2016-10-14 --> 2016-10-10)
-```
-SELECT
-  air_store_id,
-  visit_datetime,
-  reserve_datetime,
-  DATE_TRUNC(DATE(reserve_datetime), WEEK(MONDAY)) AS firstday_reserve_datetime_week
-FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
 
-### FORMAT_(DATE/TIME/DATETIME/TIMESTAMP)関数
+### to_charを用いた任意の書式での日時情報取得
 #### 説明
-日時データ(DATE型,TIME型,DATETIME型,TIMESTAMP型)に対して、指定したフォーマットに変換する関数
+PostgreSQLでは、日時データ(DATE型,TIME型,TIMESTAMP型)を、任意の形(YYYYMMDDなど)に指定したフォーマットに変換する関数
 このフォーマットについて、代表的なものを下記にまとめる<br>
 |フォーマット|内容|
 |-|-|
-|"%A"|その日時の曜日(Fridayなど)|
-|"%B"|その日時の月(Decemberなど)|
-|"%F"|YYYY-MM-DD|
+|"DAY"|その日時の曜日をすべて大文字で(FRIDAYなど)|
+|"MON"|その日時の月をすべて大文字で(DECEMBERなど)|
+|"YYYY"|年の4桁表記（2020など）|
+|"MM"|月の2桁表記(01,12など)|
+|"DD"|日の2桁表記(09,23など)|
 <br>
 上記以外にもたくさんのフォーマットがある、下記公式ドキュメントを参照。<br>
-https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators?hl=ja#supported_format_elements_for_timestamp
+https://www.postgresql.jp/document/10/html/functions-formatting.html
 
 <br>
 <br>
@@ -718,9 +732,9 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  FORMAT_TIMESTAMP("%F %A", reserve_datetime) AS date_weekday
+  to_char(reserve_datetime, 'YYYY-MM-DD DAY') AS date_weekday
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
 
@@ -729,26 +743,26 @@ FROM
 ### CAST関数
 #### 説明
 型の変換を行う関数。型の一覧は以下の公式ドキュメントを見る。<br>
-https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules?hl=ja#coercion
+https://www.postgresql.jp/document/10/html/datatype.html
 
 #### 例
-1. reserve_datetimeをSTRING型に変換する
+1. reserve_datetimeをVARCHAR型に変換する
 ```
 SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  CAST(reserve_datetime AS STRING) AS str_reserve_datetime
+  CAST(reserve_datetime AS VARCHAR) AS str_reserve_datetime
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
-2. latitude(FLOAT型)をINT64型に変換する。latitudeの少数第一位で四捨五入された結果が出力される。
+2. latitude(DOUBLE PRECISION型)をINT型に変換する。latitudeの少数第一位で四捨五入された結果が出力される。
 ```
 SELECT
   latitude,
-  CAST(latitude AS INT64) AS INT64_latitude
-FROM `kaggle_recruit_data.air_store_info`
+  CAST(latitude AS INT) AS INT_latitude
+FROM kaggle_recruit_data.air_store_info;
 ```
 
 ## 集合演算子（複数のクエリの和・差・積）
@@ -765,16 +779,16 @@ Bigqueryの場合は、UNIONだけではエラーになるため、以下のど�
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
   air_area_name LIKE 'Tōkyō-to%'
 UNION DISTINCT
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
-  air_genre_name = 'Dining bar'
+  air_genre_name = 'Dining bar';
 ```
 
 ### EXCEPT句
@@ -1030,7 +1044,7 @@ https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 
 <br>
 このデータを、Ubuntu上において、以下のディレクトリ上に全てのCSVを置いています。（全てのCSVファイルの文字コードを、UTF-8に変換しておくこと。）<br>
-私はDockerでPostgreSQLを入れているため、COPYコマンドではなく、\copyコマンドを使っています。
+私はDockerでPostgreSQLを入れているため、\copyコマンドを使っています。
 ```
 /home/[ユーザー名]/practice/postgresql/data
 ```
@@ -1067,8 +1081,8 @@ CREATE TABLE kaggle_recruit_data.air_store_info(
   "air_store_id" VARCHAR
   , "air_genre_name" VARCHAR
   , "air_area_name" VARCHAR
-  , "latitude" FLOAT
-  , "longitude" FLOAT
+  , "latitude" DOUBLE PRECISION
+  , "longitude" DOUBLE PRECISION
 );
 ```
 
@@ -1126,8 +1140,8 @@ CREATE TABLE kaggle_recruit_data.hpg_store_info(
   "hpg_store_id" VARCHAR
   , "hpg_genre_name" VARCHAR
   , "hpg_area_name" VARCHAR
-  , "latitude" FLOAT
-  , "longitude" FLOAT
+  , "latitude" DOUBLE PRECISION
+  , "longitude" DOUBLE PRECISION
 );
 ```
 
