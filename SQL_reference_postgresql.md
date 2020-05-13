@@ -742,7 +742,7 @@ FROM
 
 ### CAST関数
 #### 説明
-型の変換を行う関数。型の一覧は以下の公式ドキュメントを見る。<br>
+型の変換を行う関数。PostgreSQLの型の一覧は以下の公式ドキュメントを見る。<br>
 https://www.postgresql.jp/document/10/html/datatype.html
 
 #### 例
@@ -803,16 +803,16 @@ Bigqueryの場合は、EXCEPTだけではエラーになるため、「EXCEPT DI
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
   air_area_name LIKE 'Tōkyō-to%'
 EXCEPT DISTINCT
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
-  air_genre_name = 'Dining bar'
+  air_genre_name = 'Dining bar';
 ```
 
 ### INTERSECT句
@@ -828,16 +828,16 @@ Bigqueryの場合は、INTERSECTだけではエラーになるため、「INTERS
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
   air_area_name LIKE 'Tōkyō-to%'
 INTERSECT DISTINCT
 SELECT
   *
 FROM
-  `kaggle_recruit_data.air_store_info`
+  kaggle_recruit_data.air_store_info
 WHERE
-  air_genre_name = 'Dining bar'
+  air_genre_name = 'Dining bar';
 ```
 
 
@@ -857,14 +857,14 @@ SELECT
   reserve_datetime,
   reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve
 WHERE
   reserve_visitors >= (
     SELECT
       AVG(reserve_visitors)
     FROM
-      `kaggle_recruit_data.air_reserve`
-  )
+      kaggle_recruit_data.air_reserve
+  );
 ```
 
 ### WITH句
@@ -884,7 +884,7 @@ WITH avg_reserve_visitors AS (
   SELECT
     AVG(reserve_visitors) AS avg_reserve_visitors
   FROM
-    `kaggle_recruit_data.air_reserve`
+    kaggle_recruit_data.air_reserve
 )
 SELECT
   A.air_store_id,
@@ -892,10 +892,10 @@ SELECT
   A.reserve_datetime,
   A.reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve` A,
+  kaggle_recruit_data.air_reserve A,
   avg_reserve_visitors SUB
 WHERE
-  reserve_visitors >= SUB.avg_reserve_visitors
+  reserve_visitors >= SUB.avg_reserve_visitors;
 ```
 
 2. air_visit_dataのair_store_id別のレコード数を、air_reserveテーブルに左外部結合する
@@ -905,7 +905,7 @@ WITH record_count_of_visit_data AS (
     air_store_id,
     count(*) AS record_count
   FROM
-    `kaggle_recruit_data.air_visit_data`
+    kaggle_recruit_data.air_visit_data
   GROUP BY
     air_store_id
 )
@@ -916,11 +916,11 @@ SELECT
   A.reserve_visitors,
   B.record_count
 FROM
-  `kaggle_recruit_data.air_reserve` A
+  kaggle_recruit_data.air_reserve A
 LEFT OUTER JOIN
   record_count_of_visit_data B
 ON
-  A.air_store_id = B.air_store_id
+  A.air_store_id = B.air_store_id;
 ```
 
 3. air_visit_dataのvisitorsが、visitorsの全レコード平均値以上であるデータの中で、air_store_id別にレコード数を集計する。その後、この集計したレコード数を、air_reserveテーブルに左外部結合する
@@ -929,13 +929,13 @@ WITH avg_visitors_tbl AS (
   SELECT
     AVG(visitors) AS avg_visitors
   FROM
-    `kaggle_recruit_data.air_visit_data`
+    kaggle_recruit_data.air_visit_data
 ),record_count_of_visit_data AS (
   SELECT
     A.air_store_id,
     count(*) AS record_count
   FROM
-    `kaggle_recruit_data.air_visit_data` A,
+    kaggle_recruit_data.air_visit_data A,
     avg_visitors_tbl SUB1
   WHERE
     A.visitors >= SUB1.avg_visitors
@@ -949,11 +949,11 @@ SELECT
   B.reserve_visitors,
   C.record_count
 FROM
-  `kaggle_recruit_data.air_reserve` B
+  kaggle_recruit_data.air_reserve B
 LEFT OUTER JOIN
   record_count_of_visit_data C
 ON
-  B.air_store_id = C.air_store_id
+  B.air_store_id = C.air_store_id;
 ```
 
 ### EXISTS句
@@ -968,17 +968,17 @@ SELECT
   A.air_store_id,
   SUM(A.reserve_visitors) AS sum_reserve_visitors
 FROM
-  `kaggle_recruit_data.air_reserve` A
+  kaggle_recruit_data.air_reserve A
 WHERE
-  A.visit_datetime BETWEEN "2017-01-01" AND "2017-12-31"
+  A.visit_datetime BETWEEN '2017-01-01' AND '2017-12-31'
   AND EXISTS (
     SELECT
-      B.air_store_id
-      ,SUM(B.visitors)
+      B.air_store_id,
+      SUM(B.visitors)
     FROM
-      `kaggle_recruit_data.air_visit_data` B
+      kaggle_recruit_data.air_visit_data B
     WHERE
-      B.visit_date BETWEEN "2017-01-01" AND "2017-12-31"
+      B.visit_date BETWEEN '2017-01-01' AND '2017-12-31'
     GROUP BY
       B.air_store_id
     HAVING
@@ -986,7 +986,7 @@ WHERE
       AND SUM(B.visitors) >= 2000
   )
 GROUP BY
-  A.air_store_id
+  A.air_store_id;
 ```
 
 
@@ -1009,9 +1009,9 @@ SELECT
   visit_datetime,
   reserve_datetime,
   reserve_visitors,
-  SUM(reserve_visitors) OVER (PARTITION BY air_store_id, EXTRACT(YEAR FROM visit_datetime), EXTRACT(MONTH FROM visit_datetime)) AS visitors_summary_YYMM
+  SUM(reserve_visitors) OVER (PARTITION BY air_store_id, TO_CHAR(visit_datetime, 'YY'), TO_CHAR(visit_datetime, 'MM) AS visitors_summary_YYMM
 FROM
-  `kaggle_recruit_data.air_reserve`
+  kaggle_recruit_data.air_reserve;
 ```
 
 
