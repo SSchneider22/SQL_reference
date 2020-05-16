@@ -337,6 +337,39 @@ HAVING
   SUM(reserve_visitors) >= 100;
 ```
 
+4. visitors別のレコード数を、降順に出力
+```
+SELECT
+  visitors,
+  count(*)
+FROM
+  kaggle_recruit_data.air_visit_data
+GROUP BY
+  visitors
+ORDER BY
+  count(*) DESC;
+```
+
+5. visitorsの最頻値と、そのレコード数を出力
+```
+SELECT
+  visitors,
+  count(*)
+FROM
+  kaggle_recruit_data.air_visit_data
+GROUP BY
+  visitors
+HAVING
+  count(*) >= ALL (
+              SELECT
+                COUNT(*)
+              FROM
+                kaggle_recruit_data.air_visit_data
+              GROUP BY
+                visitors
+              );
+```
+
 ## 式 experssion
 
 ### CASE式
@@ -1020,11 +1053,40 @@ SELECT
   visit_datetime,
   reserve_datetime,
   reserve_visitors,
-  SUM(reserve_visitors) OVER (PARTITION BY air_store_id, TO_CHAR(visit_datetime, 'YY'), TO_CHAR(visit_datetime, 'MM') AS visitors_summary_YYMM
+  SUM(reserve_visitors) OVER (PARTITION BY air_store_id,
+                                           TO_CHAR(visit_datetime, 'YY'),
+                                           TO_CHAR(visit_datetime, 'MM')
+  ) AS visitors_summary_YYMM
 FROM
   kaggle_recruit_data.air_reserve;
 ```
 
+3. air_store_id別に、直近(最短1日前)のvisitorsと比べて、同じであれば「→」、上がっていれば「↑」、下がっていれば「↓」を出力する
+```
+SELECT
+  air_store_id,
+  visit_date,
+  cur_visitors,
+  CASE WHEN cur_visitors = pre_visitors THEN '→'
+       WHEN cur_visitors > pre_visitors THEN '↑'
+       WHEN cur_visitors < pre_visitors THEN '↓'
+       ELSE '-' END AS check
+FROM (
+  SELECT
+    air_store_id,
+    visit_date,
+    visitors AS cur_visitors,
+    SUM(visitors) OVER (PARTITION BY air_store_id
+                        ORDER BY air_store_id ASC,
+                                 visit_date ASC
+                        ROWS BETWEEN 1 PRECEDING
+                                 AND 1 PRECEDING) AS pre_visitors
+  FROM
+    kaggle_recruit_data.air_visit_data) TMP
+ORDER BY
+  air_store_id ASC,
+  visit_date ASC;
+```
 
 ## その他DML(Data Manipulation Language)
 
