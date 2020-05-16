@@ -990,7 +990,6 @@ GROUP BY
 ```
 
 
-
 ## 分析関数 (主にWINDOW関数)
 ### WINDOWS関数
 #### 説明
@@ -1002,54 +1001,218 @@ WINDOW関数がないと、この「該当レコードの売上値/該当レコ�
 2. 前工程で作成したクエリをサブクエリとして、元テーブルに対して左外部結合させるクエリを書く。
 
 #### 例
-1. air_store_id、visit_datetimeの年、visit_datetimeの月、この3項目別にreserve_visitorsの集計値をとり、新しくvisitors_summary_YYMMとして1列付与する
+1. air_store_id別に、reserve_visitorsの合計値を集計し、新しくvisitors_summaryとして1列付与する
 ```
 SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
   reserve_visitors,
-  SUM(reserve_visitors) OVER (PARTITION BY air_store_id, TO_CHAR(visit_datetime, 'YY'), TO_CHAR(visit_datetime, 'MM) AS visitors_summary_YYMM
+  SUM(reserve_visitors) OVER (PARTITION BY air_store_id) AS visitors_summary
+FROM
+  kaggle_recruit_data.air_reserve;
+```
+
+2. air_store_id、visit_datetimeの年、visit_datetimeの月、この3項目別にreserve_visitorsの合計値を集計し、新しくvisitors_summary_YYMMとして1列付与する
+```
+SELECT
+  air_store_id,
+  visit_datetime,
+  reserve_datetime,
+  reserve_visitors,
+  SUM(reserve_visitors) OVER (PARTITION BY air_store_id, TO_CHAR(visit_datetime, 'YY'), TO_CHAR(visit_datetime, 'MM') AS visitors_summary_YYMM
 FROM
   kaggle_recruit_data.air_reserve;
 ```
 
 
 ## その他DML(Data Manipulation Language)
-Bigqueryにおける公式ドキュメントは下記URLを参照。
-https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax?hl=ja
 
 ### INSERT文
 #### 説明
+指定したテーブルに対し、新しいデータを登録する文
+#### 例
+1. 1レコード、データの内容を指定して追加する
+```
+INSERT INTO kaggle_recruit_data.air_visit_data_copy (air_store_id, visit_date, visitors)
+  VALUES ('air_dummy99999999999', CAST('2080-01-01' AS DATE), 901);
+
+/*すべての列に対して値を設定してレコードを追加する場合は、以下のように列名の省略も可能*/
+INSERT INTO kaggle_recruit_data.air_visit_data_copy
+  VALUES ('air_dummy99999999999', CAST('2080-01-02' AS DATE), 902);
+```
+
+2. 複数レコード、データの内容を指定して追加する
+```
+INSERT INTO kaggle_recruit_data.air_visit_data_copy (air_store_id, visit_date, visitors)
+  VALUES
+    ('air_dummy99999999999', CAST('2080-01-03' AS DATE), 903),
+    ('air_dummy99999999999', CAST('2080-01-04' AS DATE), 904);
+```
+
+3. SELECT文のクエリ結果を新しく追加する
+```
+INSERT INTO kaggle_recruit_data.air_visit_data_copy (air_store_id, visit_date, visitors)
+  SELECT
+    'air_dummy99999999999',
+    CAST('2080-01-05' AS DATE),
+    905;
+```
 
 ### UPDATE文
 #### 説明
+指定したテーブルに対し、条件に一致するレコード・列の値を変更する
+#### 例
+以下のサンプルは、上記INSERT文のサンプル全て実施後に実行可能です。
+
+1. visit_dateが2080-01-01であるレコードの、visitorsを800に変更する
+```
+UPDATE kaggle_recruit_data.air_visit_data_copy
+SET visitors = 800
+WHERE visit_date = DATE('2080-01-01');
+```
+
+2. コピー元のair_visit_dataに存在するレコードの、visitorsを700に変更する
+```
+UPDATE kaggle_recruit_data.air_visit_data_copy
+SET visitors = 700
+FROM kaggle_recruit_data.air_visit_data B
+WHERE kaggle_recruit_data.air_visit_data_copy.air_store_id = B.air_store_id
+  AND kaggle_recruit_data.air_visit_data_copy.visit_date = B.visit_date;
+```
+
 
 ### DELETE文
 #### 説明
+指定したテーブルに対して、条件に一致するレコードを全て削除する
+#### 例
+1. visitorsが700であるレコードをすべて削除する
+```
+DELETE
+FROM kaggle_recruit_data.air_visit_data_copy
+WHERE visitors = 700;
+```
 
+2. （要注意！！簡単にできてしまうため、気を付ける事）テーブルのすべての行を削除する
+```
+DELETE
+FROM kaggle_recruit_data.air_visit_data_copy;
+```
 
 ## DDL(Data Definition Language)
-Bigqueryにおける公式ドキュメントは下記URLを参照。
-https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language?hl=ja
+
+### CREATE TABLE文
+#### 説明
+新しくテーブルを作成するための文。<br>
+主キーやNULLの許可など、様々な制約をかけることが可能。<br>
+詳細は以下のURLが参考になる。<br>
+http://db-study.com/archives/233 <br>
+https://www.postgresql.jp/document/10/html/sql-createtable.html
+
+#### 例
+本ページ末尾の「参考：スキーマ・テーブル構築手順」に事例あり。
+
+### CREATE TABLE ~ AS (SELECT ~)文
+#### 説明
+SELECT文によって出力された結果をそのまま新しくテーブルとして作成する。
+
+#### 例
+1. air_reserveにair_store_id別のreserve_visitorsの合計値を集計した列を追加したテーブルを新しく作成
+```
+CREATE TABLE kaggle_recruit_data.air_reserve_addsummary AS
+  SELECT
+    air_store_id,
+    visit_datetime,
+    reserve_datetime,
+    reserve_visitors,
+    SUM(reserve_visitors) OVER (PARTITION BY air_store_id) AS visitors_summary
+  FROM
+    kaggle_recruit_data.air_reserve;
+```
+
+### CREATE VIEW文
+#### 説明
+viewは、SELECT文のクエリを登録するものであり、作成したviewを参照することで、
+都度登録したSELECT文のクエリ結果を見ることができるようになるもの。
+複数のテーブルの結合を行うSELECT文など、テーブルとして定義してしまうと都度そのテーブルの更新作業が必要となってしまうのに対して、viewは参照するたびにクエリを実行するため、更新作業を必要とせず常に各テーブルの最新情報を見ることが出来る。
+#### 例
+1. air_visit_dataのair_store_id別のレコード数を、air_reserveテーブルに左外部結合したものを、「air_reserve_add_visit_data」という名称のviewとして登録する
+```
+CREATE VIEW air_reserve_add_visit_data AS
+WITH record_count_of_visit_data AS (
+  SELECT
+    air_store_id,
+    count(*) AS record_count
+  FROM
+    kaggle_recruit_data.air_visit_data
+  GROUP BY
+    air_store_id
+)
+SELECT
+  A.air_store_id,
+  A.visit_datetime,
+  A.reserve_datetime,
+  A.reserve_visitors,
+  B.record_count
+FROM
+  kaggle_recruit_data.air_reserve A
+LEFT OUTER JOIN
+  record_count_of_visit_data B
+ON
+  A.air_store_id = B.air_store_id;
+```
+
+
+### DROP TABLE文
+#### 説明
+テーブルを削除する文。簡単にできてしまうがゆえに、注意すること。
+#### 例
+1. air_reserve_addsummaryテーブルを削除する
+```
+DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
+```
 
 
 
+## 参考：よく使うメタコマンド一覧
+- psqlを終了する
+```
+\q
+```
 
-### 参考：スキーマ・テーブル構築手順
+- 指定したスキーマのテーブル一覧を取得
+```
+/*書き方*/
+\dt <スキーマ名>
 
-#### 使用データと置き場
+/*例*/
+\dt kaggle_recruit_data
+```
+
+- 指定したスキーマのテーブル一覧とそれぞれのテーブルの構造を取得
+```
+/*書き方*/
+\d <スキーマ名>.*
+
+/*例*/
+\d kaggle_recruit_data.*
+```
+
+
+## 参考：スキーマ・テーブル構築手順
+
+### 使用データと置き場
 Kaggleのデータを使用しています。<br>
 https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 
 <br>
-このデータを、Ubuntu上において、以下のディレクトリ上に全てのCSVを置いています。（全てのCSVファイルの文字コードを、UTF-8に変換しておくこと。）<br>
+このデータをUbuntu上の以下のディレクトリ上に全てのCSVを置いています。（全てのCSVファイルの文字コードを、UTF-8に変換しておくこと。）<br>
 私はDockerでPostgreSQLを入れているため、\copyコマンドを使っています。
 ```
 /home/[ユーザー名]/practice/postgresql/data
 ```
 
-#### 手順
+### 手順
 1. psqlを起動。
 ```
 psql
@@ -1161,4 +1324,16 @@ CREATE TABLE kaggle_recruit_data.store_id_relation(
 16. テーブル「store_id_relation」に、CSVの内容をコピーする
 ```
 \copy kaggle_recruit_data.store_id_relation FROM '/home/[ユーザー名]/practice/postgresql/data/store_id_relation.csv' ENCODING 'utf8' CSV HEADER DELIMITER ',';
+```
+
+17. DML文(INSERT,UPDATE,DELETEの練習用に、air_visit_dataと同じ構造のテーブルを作成する
+```
+CREATE TABLE kaggle_recruit_data.air_visit_data_copy
+(LIKE kaggle_recruit_data.air_visit_data INCLUDING ALL);
+```
+
+18. air_visit_dataからair_visit_data_copyへデータをコピーする
+```
+INSERT INTO kaggle_recruit_data.air_visit_data_copy
+SELECT * FROM kaggle_recruit_data.air_visit_data;
 ```
