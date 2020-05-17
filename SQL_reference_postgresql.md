@@ -991,8 +991,7 @@ ON
 
 ### EXISTS句
 #### 説明
-2つの同じキー項目を持つテーブルにおいて、片方のテーブルでの結果をサブクエリとしてフィルタに用いて、もう片方のテーブルから結果を得るときに使用する。<br>
-(EXISTS句はフィルタとして使う場合が多いため、WHERE句やHAVING句の中で書くことが多いため、こういった説明にしている。逆にこれ以外の用途がパッと浮かびません…)
+2つの同じキー項目を持つテーブルにおいて、片方のテーブルでの結果をサブクエリとしてフィルタに用いて、もう片方のテーブルから結果を得るときに使用する。書き方上、WITH句が使えないので注意。<br>
 
 #### 例
 1. air_visit_dataのair_store_id別のvisitorsの合計値が2000以上であるair_store_idについて、air_reserveのair_store_id別のreserve_visitorsの合計値を出力する
@@ -1248,7 +1247,7 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 \dt <スキーマ名>
 
 /*例*/
-\dt kaggle_recruit_data
+\dt kaggle_recruit_data.*
 ```
 
 - 指定したスキーマのテーブル一覧とそれぞれのテーブルの構造を取得
