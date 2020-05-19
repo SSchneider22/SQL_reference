@@ -224,7 +224,9 @@ WHERE
 
 ### ORDER BY句
 #### 説明
-レコードを指定した列で並び替えるための句
+レコードを指定した列で並び替えるための句。
+- 昇順「ASC」：ascendingの略語
+- 降順「DESC」：descendingの略語
 #### 例
 1. レコードを昇順に並び替えて表示（並び替えキーは単一列）
 ```
@@ -288,6 +290,25 @@ LEFT OUTER JOIN
   kaggle_recruit_data.air_store_info S
 ON
   R.air_store_id = S.air_store_id;
+```
+
+2. air_reserveに対してair_visit_dataを、air_store_id同士、visit_dateとvisit_datetime、この2種が一致するときに内部結合させる
+```
+SELECT
+  A.air_store_id,
+  A.visit_datetime,
+  A.reserve_visitors,
+  B.visitors
+FROM
+  kaggle_recruit_data.air_reserve A
+INNER JOIN
+  kaggle_recruit_data.air_visit_data B
+ON
+  A.air_store_id = B.air_store_id
+  AND CAST(A.visit_datetime AS DATE) = B.visit_date
+ORDER BY
+  air_store_id ASC,
+  visit_datetime ASC;
 ```
 
 
@@ -445,6 +466,27 @@ SELECT
 FROM
   kaggle_recruit_data.hpg_store_info;
 ```
+
+### SPLIT_PART関数
+#### 説明
+指定した列のデータに対して、指定した文字・記号で分割し、指定した数字の順番の情報を得る
+#### 例
+1. visit_datetimeを半角スペースで区切り、1番目の年月日の情報を取得する
+```
+SELECT
+  SPLIT_PART(CAST(visit_datetime AS VARCHAR), ' ', 1)
+FROM
+  kaggle_recruit_data.air_reserve;
+```
+
+2.  visit_datetimeを半角スペースで区切り、2番目の時分秒の情報を取得する
+```
+SELECT
+  SPLIT_PART(CAST(visit_datetime AS VARCHAR), ' ', 2)
+FROM
+  kaggle_recruit_data.air_reserve;
+```
+
 
 ### REPLACE関数
 #### 説明
@@ -1025,7 +1067,7 @@ GROUP BY
 ## 分析関数 (主にWINDOW関数)
 ### WINDOWS関数
 #### 説明
-あるテーブル内でGROUP BYを用いたような集計値を、元のテーブルのレコード数を変更することなく、元テーブルに1列追加することができる関数。<br>
+あるテーブル内でORDER BYやGROUP BYを用いた際の順番や集計値を、元のテーブルのレコード数を変更することなく、元テーブルに1列追加することができる関数。<br>
 例えば、「該当レコードの売上値/該当レコードが含まれる年の売上合計値」のようなデータが欲しいときに便利。<br>
 WINDOW関数がないと、この「該当レコードの売上値/該当レコードが含まれる年の売上合計値」は記述に手間がかかる上、可読性も落ちてしまう。<br>
 以下は、WINDOW関数がない場合の手順例。
@@ -1087,6 +1129,91 @@ ORDER BY
   visit_date ASC;
 ```
 
+4. air_store_infoに対して、データの順番は変更せずに、行番号を追加する
+```
+SELECT
+  ROW_NUMBER() OVER () AS row_num,
+  air_store_id,
+  air_genre_name,
+  air_area_name,
+  latitude,
+  longitude
+FROM
+  kaggle_recruit_data.air_store_info;
+```
+
+5. air_visit_dataのair_store_id別に、visitorsの多い順番ランキングを作成
+```
+SELECT
+  air_store_id,
+  visit_date,
+  visitors,
+  RANK() OVER (PARTITION BY air_store_id
+               ORDER BY visitors DESC
+               ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS visitors_rank,
+  DENSE_RANK() OVER (PARTITION BY air_store_id
+                     ORDER BY visitors DESC
+                     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS visitors_dense_rank
+FROM
+  kaggle_recruit_data.air_visit_data;
+
+/*RANK()とDENSE_RANK()の違い*/
+RANK()：7位タイが2人いたら、次の順位は9位になる
+DENSE_RANK()：7位タイが2人いても、次の順位は8位になる
+```
+
+6. air_visit_dataに対してair_store_idごとに、1日前のvisitors、2日前のvisitors、1日後のvisitors、2日後のvisitorsを追加して出力する(この記述方法は、Postgresqlの場合Ver11以上の時に対応しているらしい。Ver10以下でも実行できるが、ROWSで実施した場合と変わらない結果となってしまう)<br>
+参考URL：https://masahikosawada.github.io/2018/07/07/Window-Frame/#range-groups%E3%83%A2%E3%83%BC%E3%83%89
+```
+SELECT
+  air_store_id,
+  visit_date,
+  visitors,
+  LAG(visitors) OVER (PARTITION BY air_store_id
+                      ORDER BY visit_date ASC
+                      RANGE BETWEEN '1 day' PRECEDING
+                            AND interval '1 day' PRECEDING
+                      ) AS oneday_before_visitors,
+  LAG(visitors,2) OVER (PARTITION BY air_store_id
+                      ORDER BY visit_date ASC
+                      RANGE BETWEEN '2 day' PRECEDING
+                            AND '2 day' PRECEDING
+                      ) AS twoday_before_visitors
+FROM
+  kaggle_recruit_data.air_visit_data;
+```
+
+7. air_visit_dateに対してair_store_idごとに、visitorsのランキング、ランキング上位からの累積値、ランキング最上位の日付、ランキング最下位の日付を追加して、air_store_idごとのランクTOP10を出力する。
+```
+SELECT
+  air_store_id,
+  visit_date,
+  visitors,
+  visitors_rank,
+  visitors_accum,
+  visitors_first,
+  visitors_last
+FROM (
+  SELECT
+    air_store_id,
+    visit_date,
+    visitors,
+    RANK() OVER (PARTITION BY air_store_id
+                ORDER BY visitors DESC) AS visitors_rank,
+    SUM(visitors) OVER (PARTITION BY air_store_id
+                        ORDER BY visitors DESC
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS visitors_accum,
+    FIRST_VALUE(visit_date) OVER (PARTITION BY air_store_id
+                                  ORDER BY visitors DESC) AS visitors_first,
+    LAST_VALUE(visit_date) OVER (PARTITION BY air_store_id
+                                 ORDER BY visitors DESC) AS visitors_last
+  FROM
+    kaggle_recruit_data.air_visit_data
+) TMP
+WHERE
+  visitors_rank <= 10;
+```
+
 ## その他DML(Data Manipulation Language)
 
 ### INSERT文
@@ -1128,18 +1255,35 @@ INSERT INTO kaggle_recruit_data.air_visit_data_copy (air_store_id, visit_date, v
 
 1. visit_dateが2080-01-01であるレコードの、visitorsを800に変更する
 ```
-UPDATE kaggle_recruit_data.air_visit_data_copy
-SET visitors = 800
-WHERE visit_date = DATE('2080-01-01');
+UPDATE
+  kaggle_recruit_data.air_visit_data_copy
+SET
+  visitors = 800
+WHERE
+  visit_date = DATE('2080-01-01');
 ```
 
 2. コピー元のair_visit_dataに存在するレコードの、visitorsを700に変更する
 ```
-UPDATE kaggle_recruit_data.air_visit_data_copy
-SET visitors = 700
-FROM kaggle_recruit_data.air_visit_data B
-WHERE kaggle_recruit_data.air_visit_data_copy.air_store_id = B.air_store_id
+UPDATE
+  kaggle_recruit_data.air_visit_data_copy
+SET
+  visitors = 700
+FROM
+  kaggle_recruit_data.air_visit_data B
+WHERE
+  kaggle_recruit_data.air_visit_data_copy.air_store_id = B.air_store_id
   AND kaggle_recruit_data.air_visit_data_copy.visit_date = B.visit_date;
+```
+
+3. visitorの値が奇数であるもののみ、visitorsの値を+100する
+```
+UPDATE
+  kaggle_recruit_data.air_visit_data_copy
+SET
+  visitors = CASE WHEN visitors % 2 <> 0 THEN visitors + 100
+                  WHEN visitors % 2 = 0 THEN visitors
+                  ELSE visitors END;
 ```
 
 
@@ -1234,8 +1378,9 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 ```
 
 
+## その他備忘録
 
-## 参考：よく使うメタコマンド一覧
+### よく使うメタコマンド一覧
 - psqlを終了する
 ```
 \q
@@ -1257,6 +1402,64 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 
 /*例*/
 \d kaggle_recruit_data.*
+```
+
+### PostgreSQLにおける「"」と「'」の違い
+- シングルクォーテーションで囲った場合：文字列定数として扱われる
+- ダブルクォーテーションで囲った場合：カラム名として扱われる
+
+以下のような場合にエラーが起きる。
+1. テーブルを作成するとき
+```
+/*エラーが起きる例　カラム名に「'」を使っているため*/
+CREATE TABLE kaggle_recruit_data.store_id_relation_tmp(
+  'air_store_id' VARCHAR
+  , 'hpg_store_id' VARCHAR
+);
+
+/*正しい例*/
+CREATE TABLE kaggle_recruit_data.store_id_relation_tmp(
+  "air_store_id" VARCHAR
+  , "hpg_store_id" VARCHAR
+);
+```
+
+2. テーブルにデータを入れるとき
+```
+/*エラーが起きる例　文字列型のデータとして扱いたいのに、カラム名として扱われてしまう*/
+INSERT INTO
+  kaggle_recruit_data.store_id_relation_tmp (air_store_id,hpg_store_id)
+VALUES
+  ("aaaa","aaaa1111"),
+  ("bbbb","bbbb1111");
+
+/*正しい例*/
+INSERT INTO
+  kaggle_recruit_data.store_id_relation_tmp (air_store_id,hpg_store_id)
+VALUES
+  ('aaaa','aaaa1111'),
+  ('bbbb','bbbb1111');
+```
+
+3. SELECT文で文字列を用いるとき
+```
+/*エラーが起きる例　文字列型のデータを条件に設定したいのに、カラム名として扱われてしまう*/
+SELECT
+  air_store_id,
+  hpg_store_id
+FROM
+  kaggle_recruit_data.store_id_relation_tmp
+WHERE
+  air_store_id = "aaaa";
+
+/*正しい例*/
+SELECT
+  air_store_id,
+  hpg_store_id
+FROM
+  kaggle_recruit_data.store_id_relation_tmp
+WHERE
+  air_store_id = 'aaaa';
 ```
 
 
