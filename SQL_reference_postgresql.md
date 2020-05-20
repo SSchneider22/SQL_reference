@@ -181,7 +181,7 @@ WHERE
   AND (visit_datetime BETWEEN '2017-01-01' AND '2017-12-31');
 ```
 
-5. NULL値を持つデータを取得したいとき。（NULLのデータがないため、出力は0件です）
+5. reserve_visitorsがNULL値であるデータを取得したいとき。（NULLのデータがないため、出力は0件です）
 
 ```
 SELECT
@@ -228,7 +228,7 @@ WHERE
 - 昇順「ASC」：ascendingの略語
 - 降順「DESC」：descendingの略語
 #### 例
-1. レコードを昇順に並び替えて表示（並び替えキーは単一列）
+1. レコードをreserve_visitorsの昇順に並び替えて表示（並び替えキーは単一列）
 ```
 SELECT DISTINCT
   reserve_visitors AS vistor
@@ -358,7 +358,7 @@ HAVING
   SUM(reserve_visitors) >= 100;
 ```
 
-4. visitors別のレコード数を、降順に出力
+4. visitors別のレコード数を、レコード数を降順にして出力
 ```
 SELECT
   visitors,
@@ -1335,6 +1335,43 @@ CREATE TABLE kaggle_recruit_data.air_reserve_addsummary AS
     kaggle_recruit_data.air_reserve;
 ```
 
+### ALTER TABLE文
+#### 説明
+既存のテーブルに対して、列を追加・削除、列の名称・データ型の変更が出来る
+#### 例
+1. air_visit_data_copyに対して、visitors_tmp列を追加。デフォルト値を100とする。
+```
+ALTER TABLE
+  kaggle_recruit_data.air_visit_data_copy
+ADD COLUMN
+  visitors_tmp INT DEFAULT 100;
+```
+
+2. air_visit_data_copyの、visitors_tmp列を、visitors_temporaryに名称変更。
+```
+ALTER TABLE
+  kaggle_recruit_data.air_visit_data_copy
+RENAME
+  visitors_tmp TO visitors_temporary;
+```
+
+3. air_visit_data_copyのvisitors_temporary列を、VARCHAR型に変更
+```
+ALTER TABLE
+  kaggle_recruit_data.air_visit_data_copy
+ALTER
+  visitors_temporary TYPE VARCHAR;
+```
+
+4. air_visit_data_copyのvisitors_temporary列を、削除
+```
+ALTER TABLE
+  kaggle_recruit_data.air_visit_data_copy
+DROP
+  visitors_temporary;
+```
+
+
 ### CREATE VIEW文
 #### 説明
 viewは、SELECT文のクエリを登録するものであり、作成したviewを参照することで、
@@ -1386,6 +1423,16 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 \q
 ```
 
+- データベースの一覧を表示
+```
+\l
+```
+
+- 接続するデータベースの選択
+```
+\c <データベース名>
+```
+
 - 指定したスキーマのテーブル一覧を取得
 ```
 /*書き方*/
@@ -1402,6 +1449,11 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 
 /*例*/
 \d kaggle_recruit_data.*
+```
+
+- viewの一覧を取得
+```
+\dv
 ```
 
 ### PostgreSQLにおける「"」と「'」の違い
