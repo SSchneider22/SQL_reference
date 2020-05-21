@@ -567,7 +567,7 @@ https://www.postgresql.jp/document/10/html/functions-math.html
 
 ### ROUND関数
 #### 説明
-指定した列のデータに対して、四捨五入(DOUBLE PRECISION型の場合は五捨五超入)する関数。
+指定した列のデータに対して、少数第一位で四捨五入(DOUBLE PRECISION型の場合は五捨五超入)する関数。
 このややこしい事象については、以下を参考にした。<br>
 https://qiita.com/fujii_masao/items/c79575fb57827f658063
 
@@ -689,7 +689,7 @@ SELECT
 FROM
   kaggle_recruit_data.air_reserve;
 ```
-2. DATE型のvisit_dateと、CURRENT_DATE()で今日の日付をDATE型で取得したときの、月差(MONTH)を取得。（満〇か月、で計算している）
+2. DATE型のvisit_dateと、CURRENT_DATEで今日の日付をDATE型で取得したときの、月差(MONTH)を取得。（満〇か月、で計算している）
 ```
 SELECT
   air_store_id,
@@ -1036,7 +1036,7 @@ ON
 2つの同じキー項目を持つテーブルにおいて、片方のテーブルでの結果をサブクエリとしてフィルタに用いて、もう片方のテーブルから結果を得るときに使用する。書き方上、WITH句が使えないので注意。<br>
 
 #### 例
-1. air_visit_dataのair_store_id別のvisitorsの合計値が2000以上であるair_store_idについて、air_reserveのair_store_id別のreserve_visitorsの合計値を出力する
+1. air_visit_dataのair_store_id別のvisitorsの合計値が2000以上であるair_store_idについて、air_reserveのair_store_id別のreserve_visitorsの合計値を出力する（例では2017年のデータだけ使用）
 ```
 SELECT
   A.air_store_id,
@@ -1172,7 +1172,7 @@ SELECT
   LAG(visitors) OVER (PARTITION BY air_store_id
                       ORDER BY visit_date ASC
                       RANGE BETWEEN '1 day' PRECEDING
-                            AND interval '1 day' PRECEDING
+                            AND '1 day' PRECEDING
                       ) AS oneday_before_visitors,
   LAG(visitors,2) OVER (PARTITION BY air_store_id
                       ORDER BY visit_date ASC
