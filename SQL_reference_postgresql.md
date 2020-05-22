@@ -1,14 +1,11 @@
 ## 本ページについて
 
 ### 概要：
-筆者がよく使うSQLの句・式・関数についての簡単な説明と、実行可能なサンプルクエリを記載したものです。<br>
+主要と思われるSQLの句・式・関数についての簡単な説明と、実行可能なサンプルクエリを記載したものです。<br>
 本ページ作成の一番の目的は「筆者のためのTIPSを作ること」なので、説明はかなり省いています。<br>
 また、文章が稚拙な場合もあります。<br>
 各構文のより詳細な説明は他のウェブサイトに載っていますので、<br>
 本ページを利用される場合は「SQLの主要機能の一覧表・練習帳」としてご利用ください。
-<br>
-<br>
-「サンプルクエリを自分で変更して実行して、どう挙動が変わるか」をひたすら繰り返すのが、筆者は一番身につくのが速いと感じていますので、とにかくやってみることをオススメします。
 
 ## サンプルクエリ実行環境＆データ
 ### 環境
@@ -35,6 +32,44 @@ https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting/data
 PostgreSQLをCLIから操作する際は、メタ文字でのコマンドも覚えておいたほうが良いです。例えば、クエリの出力結果が多すぎて止めたい場合は、「\q」または「Shift + q」で止めることが出来ます。詳しくは以下のURLなどを参照。<br>
 https://www.dbonline.jp/postgresql/connect/index5.html
 
+#### よく使うメタコマンド一覧
+- psqlを終了する
+```
+\q
+```
+
+- データベースの一覧を表示
+```
+\l
+```
+
+- 接続するデータベースの選択
+```
+\c <データベース名>
+```
+
+- 指定したスキーマのテーブル一覧を取得
+```
+/*書き方*/
+\dt <スキーマ名>
+
+/*例*/
+\dt kaggle_recruit_data.*
+```
+
+- 指定したスキーマのテーブル一覧とそれぞれのテーブルの構造を取得
+```
+/*書き方*/
+\d <スキーマ名>.*
+
+/*例*/
+\d kaggle_recruit_data.*
+```
+
+- viewの一覧を取得
+```
+\dv
+```
 
 
 ## SQLの種類
@@ -54,8 +89,6 @@ https://www.dbonline.jp/postgresql/connect/index5.html
 
 - DCL(Data Control Language)<br>
 トランザクションの制御を行う際に用いる。<br>
-筆者が学習ベースにしているBigqueryではトランザクション処理をサポートしていないため、本ページでは扱う予定なし。
-（Bigqueryは分析用途に特化しており、決済などのトランザクション処理が不可）
 
 <br>
 ここで、「文 statement」について簡単に説明する。<br>
@@ -507,7 +540,7 @@ FROM
 指定した列のデータに対して、文字列の一部を抽出する関数<br>
 DB製品によって、関数名が異なるため注意。使い方は同じ
 - SUBSTR : Bigquery,Oracle,PostgreSQL
-- SUBSTERING : SQL Server,MySQL,Redshift
+- SUBSTRING : SQL Server,MySQL,Redshift
 #### 例
 1. hpg_store_idの1文字目～3文字目を抽出
 ```
@@ -597,7 +630,7 @@ FROM
 
 ### TRUNC関数
 #### 説明
-指定した列のデータに対して、指定桁未満で切り捨てる関数。NUMERIC型に対して使用可能。
+指定した列のデータに対して、指定した値Xの、小数点第X位より下を切り捨てる関数。NUMERIC型に対して使用可能。
 DOUBLE PRECISION型だとpostgreSQLのVer8.X以上ではエラーになる模様。
 #### 例
 1. latitudeを、少数第2位以上を残して、切り捨て
@@ -639,7 +672,7 @@ TIMESTAMP型の末尾の「+00」は、UTCを軸にどれだけ時差がある�
 日時関数関係は公式ドキュメントを見ると、より詳細なオプションが記載されている<br>
 https://www.postgresql.jp/document/10/html/datatype-datetime.html
 
-### CURRENT_(DATE/TIME/TIMESTAMP)関数
+### CURRENT_(DATE/TIME/TIMESTAMP)
 #### 説明
 現在の日時をTIMESTAMP型で取得する関数
 同様の関数として、CURRENT_DATE、CURRENT_TIME、CURRENT_DATETIMEなどがある
@@ -699,7 +732,7 @@ FROM
   kaggle_recruit_data.air_visit_data;
 ```
 
-### (DATE/TIME/TIMESTAMP)_型に対する加算・減算
+### (DATE/TIME/TIMESTAMP)型に対する加算・減算
 #### 説明
 日時データ(DATE型,TIME型,TIMESTAMP型)に対して、指定した数値を加算・減算した日時を取得するためには、関数が用意されていないためそれぞれ演算処理を記述する。<br>
 使用するDBによっては、関数が用意されているため要確認。<br>
@@ -714,7 +747,7 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  reserve_datetime + ('1 DAYS') AS reserve_datetime_add1day
+  reserve_datetime + '1 DAYS' AS reserve_datetime_add1day
 FROM
   kaggle_recruit_data.air_reserve;
 ```
@@ -725,7 +758,7 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  reserve_datetime + ('1 MONTHS') AS reserve_datetime_add1month
+  reserve_datetime + '1 MONTHS' AS reserve_datetime_add1month
 FROM
   kaggle_recruit_data.air_reserve;
 ```
@@ -736,7 +769,7 @@ SELECT
   air_store_id,
   visit_datetime,
   reserve_datetime,
-  reserve_datetime + ('-1 WEEKS') AS reserve_datetime_sub1week
+  reserve_datetime + '-1 WEEKS' AS reserve_datetime_sub1week
 FROM
   kaggle_recruit_data.air_reserve;
 ```
@@ -1117,7 +1150,7 @@ FROM (
     air_store_id,
     visit_date,
     visitors AS cur_visitors,
-    SUM(visitors) OVER (PARTITION BY air_store_id
+    LAG(visitors) OVER (PARTITION BY air_store_id
                         ORDER BY air_store_id ASC,
                                  visit_date ASC
                         ROWS BETWEEN 1 PRECEDING
@@ -1172,12 +1205,12 @@ SELECT
   LAG(visitors) OVER (PARTITION BY air_store_id
                       ORDER BY visit_date ASC
                       RANGE BETWEEN '1 day' PRECEDING
-                            AND '1 day' PRECEDING
+                            AND CURRENT ROW
                       ) AS oneday_before_visitors,
   LAG(visitors,2) OVER (PARTITION BY air_store_id
                       ORDER BY visit_date ASC
                       RANGE BETWEEN '2 day' PRECEDING
-                            AND '2 day' PRECEDING
+                            AND CURRENT ROW
                       ) AS twoday_before_visitors
 FROM
   kaggle_recruit_data.air_visit_data;
@@ -1213,6 +1246,24 @@ FROM (
 WHERE
   visitors_rank <= 10;
 ```
+
+8. air_store_id別に、visitorsの直近7日間での7日間移動平均を求める
+```
+SELECT
+  air_store_id,
+  visit_date,
+  visitors,
+  CASE WHEN count(visitors) OVER (PARTITION BY air_store_id
+                                  ORDER BY visit_date ASC
+                                  ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) = 7
+                            THEN AVG(visitors) OVER (PARTITION BY air_store_id
+                                                     ORDER BY visit_date ASC
+                                                     RANGE BETWEEN '6 day' PRECEDING AND CURRENT ROW)
+                            ELSE NULL END AS threeday_avg
+FROM
+  kaggle_recruit_data.air_visit_data;
+```
+
 
 ## その他DML(Data Manipulation Language)
 
@@ -1416,45 +1467,6 @@ DROP TABLE kaggle_recruit_data.air_reserve_addsummary;
 
 
 ## その他備忘録
-
-### よく使うメタコマンド一覧
-- psqlを終了する
-```
-\q
-```
-
-- データベースの一覧を表示
-```
-\l
-```
-
-- 接続するデータベースの選択
-```
-\c <データベース名>
-```
-
-- 指定したスキーマのテーブル一覧を取得
-```
-/*書き方*/
-\dt <スキーマ名>
-
-/*例*/
-\dt kaggle_recruit_data.*
-```
-
-- 指定したスキーマのテーブル一覧とそれぞれのテーブルの構造を取得
-```
-/*書き方*/
-\d <スキーマ名>.*
-
-/*例*/
-\d kaggle_recruit_data.*
-```
-
-- viewの一覧を取得
-```
-\dv
-```
 
 ### PostgreSQLにおける「"」と「'」の違い
 - シングルクォーテーションで囲った場合：文字列定数として扱われる
