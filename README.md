@@ -1,7 +1,6 @@
 # SQL reference
 自分用のSQLリファレンスファイルです。 <br>
 以下の製品に対応しています。
-- Bigquery:SQL_reference_bigquery.md
 - PostgreSQL:SQL_reference_postgre.md
 
 使用データ:<br>
